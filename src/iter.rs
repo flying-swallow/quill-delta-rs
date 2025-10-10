@@ -81,7 +81,7 @@ impl Iterator {
         if next_op.is_delete() {
             Op::delete(length)
         } else if next_op.is_retain() {
-            Op::retain(length, next_op.attributes())
+            Op::retain(length, next_op.attributes().cloned())
         } else if next_op.is_text_insert() {
             let sub_string: String = next_op
                 .value_as_string()
@@ -89,9 +89,9 @@ impl Iterator {
                 .skip(init_offset)
                 .take(length)
                 .collect();
-            Op::insert(Value::from(sub_string), next_op.attributes())
+            Op::insert(Value::from(sub_string), next_op.attributes().cloned())
         } else {
-            Op::insert(next_op.value(), next_op.attributes())
+            Op::insert(next_op.value(), next_op.attributes().cloned())
         }
     }
 
@@ -116,9 +116,9 @@ impl Iterator {
     /// Get the [OpType] of the next [Op] without affecting the iterator.
     ///
     /// Returns ```OpType::RETAIN(usize::MAX)``` if no more [Op] available.
-    pub fn peek_type(&self) -> OpType {
+    pub fn peek_type<'a>(&'a self) -> &'a OpType {
         if self.index >= self.ops.len() {
-            OpType::RETAIN(usize::MAX)
+            &OpType::Retain(usize::MAX)
         } else {
             self.ops.get(self.index).unwrap().kind()
         }
@@ -257,12 +257,12 @@ mod tests {
     fn peek_type() {
         let ops = vec![Op::insert("Hello", Some(attributes!("bold" => true)))];
         let mut iter = Iterator::from(ops);
-        assert_eq!(OpType::INSERT("Hello".into()), iter.peek_type());
+        assert_eq!(OpType::Insert("Hello".into()), iter.peek_type().clone());
         assert_eq!(
             Op::insert("Hello", Some(attributes!("bold" => true)),),
             iter.next().unwrap()
         );
-        assert_eq!(OpType::RETAIN(usize::MAX), iter.peek_type());
+        assert_eq!(OpType::Retain(usize::MAX), iter.peek_type().clone());
     }
 
     #[test]

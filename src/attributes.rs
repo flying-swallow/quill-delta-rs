@@ -4,7 +4,7 @@ use std::{
     ops::Index,
 };
 
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 #[macro_export]
@@ -28,6 +28,10 @@ pub struct AttributesMap(HashMap<String, Value>);
 impl AttributesMap {
     pub fn new() -> Self {
         AttributesMap(HashMap::new())
+    }
+
+    pub fn get(&self, key: &str) -> Option<&Value> {
+        self.0.get(key)
     }
 
     /// Union of attributes, where conflicts are overriden by second argument

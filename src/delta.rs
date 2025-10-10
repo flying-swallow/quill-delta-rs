@@ -1,6 +1,6 @@
 use std::{cmp::min, fmt::Display};
 
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::{
@@ -26,6 +26,10 @@ impl Delta {
     /// Create an empty [Delta].
     pub fn new() -> Self {
         Delta { ops: Vec::new() }
+    }
+
+    pub fn from_ops(ops: Vec<Op>) -> Self {
+        Delta { ops }
     }
 
     pub fn ops(&self) -> &Vec<Op> {
@@ -89,14 +93,15 @@ impl Delta {
                 && new_op.value().is_string()
                 && last_op.value().is_string()
             {
-                let mut merged_text = last_op.value_as_string().clone();
-                merged_text.push_str(&new_op.value_as_string());
-                let merged_op = Op::insert(Value::from(merged_text), new_op.attributes());
+                let mut merged_text = last_op.value_as_string().to_string();
+                merged_text.push_str(new_op.value_as_string());
+                let merged_op = Op::insert(Value::from(merged_text), new_op.attributes().cloned());
                 let _ = std::mem::replace(last_op, merged_op);
                 return self;
             }
             if last_op.is_retain() && new_op.is_retain() {
-                let merged_op = Op::retain(last_op.len() + new_op.len(), new_op.attributes());
+                let merged_op =
+                    Op::retain(last_op.len() + new_op.len(), new_op.attributes().cloned());
                 let _ = std::mem::replace(last_op, merged_op);
                 return self;
             }
@@ -229,7 +234,7 @@ impl Delta {
         let mut plain_text = String::new();
         for op in &self.ops {
             if op.is_text_insert() {
-                plain_text.push_str(&op.value_as_string().clone());
+                plain_text.push_str(&op.value_as_string());
             } else {
                 plain_text.push('\n');
             }
@@ -358,7 +363,7 @@ impl Delta {
             // if other first op us is plain retains, use self's ops for the length of the retain
             let first_other = first_other.unwrap();
             let mut first_other_len_left = first_other.len();
-            while matches!(iter.peek_type(), OpType::INSERT(_))
+            while matches!(iter.peek_type(), OpType::Insert(_))
                 && iter.peek_len() <= first_other_len_left
             {
                 first_other_len_left -= iter.peek_len();
@@ -372,10 +377,10 @@ impl Delta {
         let mut delta = Delta::from(combined_ops);
 
         while iter.has_next() || other_iter.has_next() {
-            if matches!(other_iter.peek_type(), OpType::INSERT(_)) {
+            if matches!(other_iter.peek_type(), OpType::Insert(_)) {
                 let other_next = other_iter.next().unwrap();
                 delta.push(other_next);
-            } else if matches!(iter.peek_type(), OpType::DELETE(_)) {
+            } else if matches!(iter.peek_type(), OpType::Delete(_)) {
                 let self_next = iter.next().unwrap();
                 delta.push(self_next);
             } else {
@@ -386,8 +391,8 @@ impl Delta {
                 if other_op.is_retain() {
                     // Preserve null when composing with a retain, otherwise remove it for inserts
                     let attributes = AttributesMap::compose(
-                        self_op.attributes().unwrap_or_default(),
-                        other_op.attributes().unwrap_or_default(),
+                        self_op.attributes().cloned().unwrap_or_default(),
+                        other_op.attributes().cloned().unwrap_or_default(),
                         self_op.is_retain(),
                     );
                     let new_op = if self_op.is_retain() {
@@ -498,8 +503,11 @@ impl Delta {
                         inverted.retain(
                             base_op.len(),
                             Some(AttributesMap::invert(
-                                op.attributes().unwrap(),
-                                base_op.attributes().unwrap_or_default(),
+                                op.attributes().unwrap().clone(),
+                                match base_op.attributes() {
+                                    Some(a) => a.clone(),
+                                    None => AttributesMap::new(),
+                                },
                             )),
                         );
                     }

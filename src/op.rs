@@ -1,6 +1,6 @@
 use std::fmt::{self, Display};
 
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::attributes::AttributesMap;
@@ -35,9 +35,9 @@ impl std::error::Error for Error {}
 #[serde(rename_all = "lowercase")]
 pub enum OpType {
     // Bind module to JSON serialization
-    INSERT(Value),
-    RETAIN(usize),
-    DELETE(usize),
+    Insert(Value),
+    Retain(usize),
+    Delete(usize),
 }
 
 /// An operation in a Delta.
@@ -52,13 +52,6 @@ pub struct Op {
 }
 
 impl Op {
-    fn attributes_or_empty(attributes: Option<AttributesMap>) -> AttributesMap {
-        match attributes {
-            Some(attributes) => attributes,
-            _ => AttributesMap::new(),
-        }
-    }
-
     pub fn insert<V: Into<Value>>(object: V, attributes: Option<AttributesMap>) -> Self {
         let object = object.into();
         if !matches!(object, Value::String(_))
@@ -71,8 +64,11 @@ impl Op {
             );
         }
         Op {
-            kind: OpType::INSERT(object),
-            attributes: Self::attributes_or_empty(attributes),
+            kind: OpType::Insert(object),
+            attributes: match attributes {
+                Some(attrs) => attrs,
+                None => AttributesMap::new(),
+            },
         }
     }
 
@@ -87,23 +83,29 @@ impl Op {
             ));
         }
         Ok(Op {
-            kind: OpType::INSERT(object),
-            attributes: Self::attributes_or_empty(attributes),
+            kind: OpType::Insert(object),
+            attributes: match attributes {
+                Some(attrs) => attrs.clone(),
+                None => AttributesMap::new(),
+            },
         })
     }
 
     pub fn retain(length: usize, attributes: Option<AttributesMap>) -> Self {
         assert_ne!(length, 0, "retain length must be greater than zero");
         Op {
-            kind: OpType::RETAIN(length),
-            attributes: Self::attributes_or_empty(attributes),
+            kind: OpType::Retain(length),
+            attributes: match attributes {
+                Some(attrs) => attrs,
+                None => AttributesMap::new(),
+            },
         }
     }
 
     pub fn delete(length: usize) -> Self {
         assert_ne!(length, 0, "delete length must be greater than zero");
         Op {
-            kind: OpType::DELETE(length),
+            kind: OpType::Delete(length),
             attributes: AttributesMap::new(),
         }
     }
@@ -113,33 +115,33 @@ impl Op {
     }
 
     pub fn is_insert(&self) -> bool {
-        matches!(self.kind, OpType::INSERT(_))
+        matches!(self.kind, OpType::Insert(_))
     }
 
     pub fn is_text_insert(&self) -> bool {
-        matches!(&self.kind, OpType::INSERT(value) if matches!(value, Value::String(_)))
+        matches!(&self.kind, OpType::Insert(value) if matches!(value, Value::String(_)))
     }
 
     pub fn is_retain(&self) -> bool {
-        matches!(self.kind, OpType::RETAIN(_))
+        matches!(self.kind, OpType::Retain(_))
     }
 
     pub fn is_delete(&self) -> bool {
-        matches!(self.kind, OpType::DELETE(_))
+        matches!(self.kind, OpType::Delete(_))
     }
 
-    pub fn kind(&self) -> OpType {
-        self.kind.clone()
+    pub fn kind<'a>(&'a self) -> &'a OpType {
+        &self.kind
     }
 
     pub fn len(&self) -> usize {
         match &self.kind {
-            OpType::INSERT(value) => match value {
+            OpType::Insert(value) => match value {
                 Value::String(s) => s.len(),
                 _ => 1,
             },
-            OpType::RETAIN(len) => *len,
-            OpType::DELETE(len) => *len,
+            OpType::Retain(len) => *len,
+            OpType::Delete(len) => *len,
         }
     }
 
@@ -147,14 +149,14 @@ impl Op {
         self.len() == 0
     }
 
-    pub fn attributes(&self) -> Option<AttributesMap> {
+    pub fn attributes<'a>(&'a self) -> Option<&'a AttributesMap> {
         match self.kind {
-            OpType::DELETE(_) => None,
+            OpType::Delete(_) => None,
             _ => {
                 if self.attributes.is_empty() {
                     None
                 } else {
-                    Some(self.attributes.clone())
+                    Some(&self.attributes)
                 }
             }
         }
@@ -162,7 +164,7 @@ impl Op {
 
     pub fn value(&self) -> Value {
         match &self.kind {
-            OpType::INSERT(value) => value.clone(),
+            OpType::Insert(value) => value.clone(),
             _ => panic!(
                 "Retrieving the value of an operation is possible \
                 only on INSERT operations; Try to get value of {:?}",
@@ -171,11 +173,11 @@ impl Op {
         }
     }
 
-    pub fn value_as_string(&self) -> String {
+    pub fn value_as_string<'a>(&'a self) -> &'a str {
         match &self.kind {
-            OpType::INSERT(value) => {
-                if let Some(str) = value.clone().as_str() {
-                    String::from(str)
+            OpType::Insert(value) => {
+                if let Some(str) = value.as_str() {
+                    str
                 } else {
                     panic!(
                         "Retrieving the text value of an operation is possible \
@@ -196,7 +198,7 @@ impl Op {
 impl Display for Op {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.kind {
-            OpType::INSERT(v) => {
+            OpType::Insert(v) => {
                 f.write_fmt(format_args!(
                     "ins({})",
                     v.as_str()
@@ -204,10 +206,10 @@ impl Display for Op {
                         .replace('\n', "⏎")
                 ))?;
             }
-            OpType::RETAIN(l) => {
+            OpType::Retain(l) => {
                 f.write_fmt(format_args!("ret({l})"))?;
             }
-            OpType::DELETE(l) => {
+            OpType::Delete(l) => {
                 f.write_fmt(format_args!("del({l})"))?;
             }
         }
@@ -275,7 +277,7 @@ mod tests {
         assert!(act.is_insert());
         assert!(!act.is_delete());
         assert!(!act.is_retain());
-        assert!(matches!(act.kind(), OpType::INSERT(_)));
+        assert!(matches!(act.kind(), OpType::Insert(_)));
         assert!(act.attributes().is_none())
     }
 
@@ -292,12 +294,12 @@ mod tests {
         assert!(act.is_insert());
         assert!(!act.is_delete());
         assert!(!act.is_retain());
-        assert!(matches!(act.kind(), OpType::INSERT(_)));
+        assert!(matches!(act.kind(), OpType::Insert(_)));
         assert!(
             act.attributes().is_some(),
             "No attributes; attributes are expected"
         );
-        assert_eq!(act.attributes().unwrap(), attributes!("b" => true))
+        assert_eq!(act.attributes().unwrap().clone(), attributes!("b" => true))
     }
 
     #[test]
@@ -319,7 +321,7 @@ mod tests {
         assert!(act.is_insert());
         assert!(!act.is_delete());
         assert!(!act.is_retain());
-        assert!(matches!(act.kind(), OpType::INSERT(_)));
+        assert!(matches!(act.kind(), OpType::Insert(_)));
         assert_eq!(act.len(), 1);
         assert_eq!(act.value(), value);
         assert!(act.attributes().is_none(), "No attributes are expected");
@@ -408,7 +410,7 @@ mod tests {
         assert!(!act.is_insert());
         assert!(act.is_delete());
         assert!(!act.is_retain());
-        assert!(matches!(act.kind(), OpType::DELETE(_)));
+        assert!(matches!(act.kind(), OpType::Delete(_)));
         assert_eq!(act.len(), 3);
         assert!(act.attributes().is_none());
     }
@@ -420,7 +422,7 @@ mod tests {
         assert!(!act.is_insert());
         assert!(!act.is_delete());
         assert!(act.is_retain());
-        assert!(matches!(act.kind(), OpType::RETAIN(_)));
+        assert!(matches!(act.kind(), OpType::Retain(_)));
         assert_eq!(act.len(), 3);
         assert!(act.attributes().is_none())
     }
@@ -432,13 +434,13 @@ mod tests {
         assert!(!act.is_insert());
         assert!(!act.is_delete());
         assert!(act.is_retain());
-        assert!(matches!(act.kind(), OpType::RETAIN(_)));
+        assert!(matches!(act.kind(), OpType::Retain(_)));
         assert_eq!(act.len(), 3);
         assert!(
             act.attributes().is_some(),
             "No attributes; attributes are expected"
         );
-        assert_eq!(act.attributes().unwrap(), attributes!("b" => true))
+        assert_eq!(act.attributes().unwrap().clone(), attributes!("b" => true))
     }
 
     #[test]
