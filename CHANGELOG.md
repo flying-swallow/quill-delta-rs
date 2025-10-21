@@ -1,6 +1,7 @@
 ## 2.0.0
 - Deserialization with `delta` instead of `ops` property is supported
 - Enhanced `Delta` builder functions
+- `Delta` implements `Eq`
 
 ### Breaking changes
 - `insert`, `delete` & `retain` take ownership of `self`.

@@ -3,7 +3,7 @@ use std::fmt::{self, Display};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::attributes::AttributesMap;
+use crate::AttributesMap;
 
 /// An error related to Deltas
 #[derive(Debug)]
@@ -31,7 +31,7 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {}
 
 /// Kind operation that Deltas support
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum OpType {
     // Bind module to JSON serialization
@@ -43,7 +43,7 @@ pub enum OpType {
 /// An operation in a Delta.
 ///
 /// Operations materialize a change to be applied to a state and results in a new state
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Op {
     #[serde(flatten)]
     kind: OpType,
@@ -225,7 +225,7 @@ mod tests {
 
     use serde_json::{Value, json};
 
-    use crate::attributes::{AttributesMap, attributes};
+    use crate::{AttributesMap, attributes};
 
     use crate::op::{Op, OpType};
 

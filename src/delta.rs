@@ -16,7 +16,7 @@ use crate::{
 /// > Deltas are a simple, yet expressive format that can be used to describe Quill's contents and changes.
 /// > The format is a strict subset of JSON, is human readable, and easily parsible by machines.
 /// > Deltas can describe any Quill document, includes all text and formatting information, without the ambiguity and complexity of HTML.
-#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Delta {
     #[serde(rename = "delta", alias = "ops")]
     ops: Vec<Op>,
@@ -47,7 +47,7 @@ impl Delta {
     ///
     /// ```
     /// use serde_json::Value;
-    /// use quill_delta_rs::{delta::Delta, attributes::{attributes, AttributesMap}, op::Op};
+    /// use quill_delta_rs::{Delta, {attributes, AttributesMap}, Op};
     ///
     /// let mut delta = Delta::new()
     ///     .insert("a", Some(attributes!("bold" => true)))
@@ -146,7 +146,7 @@ impl Delta {
     ///
     /// ```
     /// use serde_json::Value;
-    /// use quill_delta_rs::delta::Delta;
+    /// use quill_delta_rs::Delta;
     ///
     /// let mut delta = Delta::new().insert("Test", None).retain(4, None);
     /// let mut exp = Delta::new().insert("Test", None);
@@ -186,7 +186,7 @@ impl Delta {
     /// # Example
     ///
     /// ```
-    /// use quill_delta_rs::delta::Delta;
+    /// use quill_delta_rs::Delta;
     ///
     /// let delta = Delta::new()
     ///     .insert("Text", None)
@@ -208,7 +208,7 @@ impl Delta {
     /// # Example
     ///
     /// ```
-    /// use quill_delta_rs::delta::Delta;
+    /// use quill_delta_rs::Delta;
     ///
     /// let delta = Delta::new()
     ///     .insert("Text", None)
@@ -249,7 +249,7 @@ impl Delta {
     /// # Example
     ///
     /// ```
-    /// use quill_delta_rs::delta::Delta;
+    /// use quill_delta_rs::Delta;
     /// use serde_json::json;
     ///
     /// let mut delta = Delta::new()
@@ -287,8 +287,8 @@ impl Delta {
     /// # Example
     ///
     /// ```
-    /// use quill_delta_rs::delta::Delta;
-    /// use quill_delta_rs::attributes::{attributes,AttributesMap};
+    /// use quill_delta_rs::Delta;
+    /// use quill_delta_rs::{attributes,AttributesMap};
     /// use serde_json::json;
     ///
     /// let delta = Delta::new()
@@ -319,9 +319,9 @@ impl Delta {
     ///
     /// ```
     /// use quill_delta_rs::{
-    ///     delta::Delta,
-    ///     attributes::{attributes,AttributesMap},
-    ///     op::Op
+    ///     Delta,
+    ///     {attributes,AttributesMap},
+    ///     Op
     /// };
     ///
     /// use serde_json::json;
@@ -423,9 +423,9 @@ impl Delta {
     ///
     /// ```
     /// use quill_delta_rs::{
-    ///     delta::Delta,
-    ///     attributes::AttributesMap,
-    ///     op::Op
+    ///     Delta,
+    ///     AttributesMap,
+    ///     Op
     /// };
     ///
     /// use serde_json::json;
@@ -441,9 +441,9 @@ impl Delta {
     /// ## Invert delete
     /// ```
     /// use quill_delta_rs::{
-    ///     delta::Delta,
-    ///     attributes::AttributesMap,
-    ///     op::Op
+    ///     Delta,
+    ///     AttributesMap,
+    ///     Op
     /// };
     ///
     /// use serde_json::json;
@@ -460,9 +460,9 @@ impl Delta {
     ///
     /// ```
     /// use quill_delta_rs::{
-    ///     delta::Delta,
-    ///     attributes::{attributes,AttributesMap},
-    ///     op::Op
+    ///     Delta,
+    ///     {attributes,AttributesMap},
+    ///     Op
     /// };
     ///
     /// use serde_json::Value;
@@ -536,8 +536,7 @@ mod push_tests {
     use serde_json::Value;
 
     use crate::{
-        attributes::{AttributesMap, attributes},
-        op::Op,
+        Op, {AttributesMap, attributes},
     };
 
     use super::Delta;
@@ -656,8 +655,7 @@ mod helpers_tests {
     use serde_json::json;
 
     use crate::{
-        attributes::{AttributesMap, attributes},
-        op::Op,
+        Op, {AttributesMap, attributes},
     };
 
     use super::Delta;
@@ -820,8 +818,7 @@ mod compose_tests {
     use serde_json::Value;
 
     use crate::{
-        attributes::{AttributesMap, attributes},
-        op::Op,
+        Op, {AttributesMap, attributes},
     };
 
     use super::Delta;
@@ -1122,8 +1119,7 @@ mod compose_tests {
 mod invert_tests {
 
     use crate::{
-        attributes::{AttributesMap, attributes},
-        op::Op,
+        Op, {AttributesMap, attributes},
     };
 
     use super::Delta;

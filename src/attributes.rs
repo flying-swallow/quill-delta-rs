@@ -16,13 +16,11 @@ macro_rules! attributes {
     };
 }
 
-pub use attributes;
-
 /// Attributes of an operation
 ///
 /// These include any formating attribute or companion data associated with
 /// an inserted item
-#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct AttributesMap(HashMap<String, Value>);
 
 impl AttributesMap {
@@ -42,7 +40,7 @@ impl AttributesMap {
     /// # Example
     ///
     /// ```
-    /// use quill_delta_rs::attributes::{attributes,AttributesMap};
+    /// use quill_delta_rs::{attributes,AttributesMap};
     /// use serde_json::Value;
     ///
     /// let mut a = AttributesMap::new();
@@ -95,7 +93,7 @@ impl AttributesMap {
     /// # Example
     ///
     /// ```
-    /// use quill_delta_rs::attributes::{attributes, AttributesMap};
+    /// use quill_delta_rs::{attributes, AttributesMap};
     /// use serde_json::Value;
     ///
     /// let mut a = attributes!(
@@ -149,7 +147,7 @@ impl AttributesMap {
     /// # Example
     ///
     /// ```
-    /// use quill_delta_rs::attributes::{attributes, AttributesMap};
+    /// use quill_delta_rs::{attributes, AttributesMap};
     /// use serde_json::Value;
     ///
     /// let attributes = attributes!("bold" => true);
@@ -180,7 +178,7 @@ impl AttributesMap {
     /// #Example
     ///
     /// ```
-    /// use quill_delta_rs::attributes::{attributes, AttributesMap};
+    /// use quill_delta_rs::{attributes, AttributesMap};
     /// use serde_json::Value;
     ///
     /// let left = attributes!(
@@ -227,7 +225,7 @@ impl AttributesMap {
     /// # Examples
     ///
     /// ```
-    /// use quill_delta_rs::attributes::AttributesMap;
+    /// use quill_delta_rs::AttributesMap;
     /// use serde_json::Value;
     ///
     /// let mut a = AttributesMap::new();
@@ -251,7 +249,7 @@ impl AttributesMap {
     /// # Examples
     ///
     /// ```
-    /// use quill_delta_rs::attributes::AttributesMap;
+    /// use quill_delta_rs::AttributesMap;
     /// use serde_json::Value;
     ///
     /// let mut map = AttributesMap::new();
@@ -272,7 +270,7 @@ impl AttributesMap {
     /// # Examples
     ///
     /// ```
-    /// use quill_delta_rs::attributes::AttributesMap;
+    /// use quill_delta_rs::AttributesMap;
     /// use serde_json::Value;
     ///
     /// let mut map = AttributesMap::new();
@@ -300,7 +298,7 @@ impl From<HashMap<String, Value>> for AttributesMap {
     /// ```
     /// use std::collections::HashMap;
     /// use serde_json::Value;
-    /// use quill_delta_rs::attributes::AttributesMap;
+    /// use quill_delta_rs::AttributesMap;
     ///
     /// let hash_map = HashMap::from([("key1".to_string(), Value::from(2)), ("key2".to_string(), Value::from(4))]);
     /// let map1 = AttributesMap::from(hash_map.clone());
@@ -316,7 +314,7 @@ impl<const N: usize> From<[(String, Value); N]> for AttributesMap {
     /// # Examples
     ///
     /// ```
-    /// use quill_delta_rs::attributes::AttributesMap;
+    /// use quill_delta_rs::AttributesMap;
     /// use serde_json::Value;
     ///
     /// let map1 = AttributesMap::from([("key1".to_string(), Value::from(2)), ("key2".to_string(), Value::from(4))]);
@@ -340,7 +338,7 @@ impl<'a, const N: usize> From<[(&'a str, Value); N]> for AttributesMap {
     /// # Examples
     ///
     /// ```
-    /// use quill_delta_rs::attributes::{attributes,AttributesMap};
+    /// use quill_delta_rs::{attributes,AttributesMap};
     /// use serde_json::Value;
     ///
     /// let map1 = attributes!("key1" => 2, "key2" => 4);
